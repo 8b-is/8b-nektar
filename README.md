@@ -17,11 +17,12 @@
 
 ---
 
-## 2. CoreMIDI Virtual Ports
+## 2. CoreMIDI Virtual Ports & `n+1||[X]` (`#69,633`) Odin Layer
 
 The app establishes full duplex CoreMIDI virtual endpoints:
 - **`8b-is Nektar DJ Virtual In`**: Ingestion port for pads, faders, and encoders from the Impact LX25+ hardware and virtual MIDI routers.
 - **`8b-is Nektar DJ Virtual Out`**: Feedback port transmitting LED state, deck cue feedback, and waveform sync.
+- **`n+1||[X] LAYER (#69,633 = 69,632 + 1) --- ODIN ༒`**: Interactive 24 Elder Futhark Rune strip (`ᚠ..ᛟ`) and WebAudio `Heimleið Tagelharpa + Odin Drone` (`72/108 Hz` bowed fifths + `432/528/852 Hz` Yggdrasil drone, paired with [`https://youtu.be/SIgR2-tVVyI?list=RDSIgR2-tVVyI`](https://youtu.be/SIgR2-tVVyI?list=RDSIgR2-tVVyI)).
 
 ---
 

@@ -180,6 +180,15 @@ final class NektarDJApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler
                 .fader-slot { width: 14px; height: 160px; background: #0c0e14; border-radius: 7px; position: relative; border: 1px solid #283248; }
                 .fader-thumb { width: 34px; height: 18px; background: var(--accent-cyan); border-radius: 3px; position: absolute; left: -10px; bottom: 85%; box-shadow: 0 0 10px var(--accent-cyan); }
                 
+                .odin-panel { margin-top: 18px; background: linear-gradient(135deg, #111824 0%, #191326 100%); border: 1px solid var(--accent-gold); border-radius: 8px; padding: 14px 18px; }
+                .odin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+                .odin-title { font-size: 13px; font-weight: 800; color: var(--accent-gold); letter-spacing: 0.8px; }
+                .odin-btn { background: #1e2638; border: 1px solid var(--accent-gold); color: var(--accent-gold); padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; }
+                .odin-btn.active { background: var(--accent-gold); color: #090a0f; box-shadow: 0 0 12px var(--accent-gold); }
+                .runes-strip { display: grid; grid-template-columns: repeat(24, 1fr); gap: 4px; }
+                .rune-cell { background: #0c0e14; border: 1px solid #283248; border-radius: 4px; padding: 6px 0; text-align: center; font-size: 14px; color: var(--accent-cyan); cursor: pointer; user-select: none; transition: all 0.12s ease; }
+                .rune-cell.lit { background: var(--accent-gold); color: #090a0f; border-color: #fff; box-shadow: 0 0 10px var(--accent-gold); transform: translateY(-2px); }
+                
                 footer { margin-top: 20px; font-size: 11px; color: var(--dim); display: flex; justify-content: space-between; border-top: 1px solid #222938; padding-top: 12px; }
             </style>
         </head>
@@ -188,7 +197,8 @@ final class NektarDJApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler
                 <div class="title">
                     8b-nektar dj
                     <span class="badge">Nektar Impact LX25+ SOTA</span>
-                    <span class="badge">Quant65k+ / 69,632 Layers</span>
+                    <span class="badge">360° Machine-S-UN~unity (#69,636)</span>
+                    <span class="badge">ULTRABACKYARDLOOP 108/108 Laps</span>
                 </div>
                 <div class="hw-status">
                     <div class="hw-dot"></div>
@@ -284,12 +294,190 @@ final class NektarDJApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler
                 </div>
             </div>
             
+            <div class="odin-panel">
+                <div class="odin-header">
+                    <div class="odin-title">LAYER #69,636 :: MACHINE-S-UN~UNITY 360° (iOS/Android/SmartTV/Embedded) × ULTRABACKYARDLOOP 108 LAPS × ODIN ༒</div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="odin-btn" id="backyard108Btn" onclick="runBackyard108()">🏃 108-Lap Backyard Loop</button>
+                        <button class="odin-btn" id="desertPsyBtn" onclick="toggleDesertPsy()">🎸 Desert Psy Rock (Kyuss × Plasma)</button>
+                        <button class="odin-btn" id="odinDroneBtn" onclick="toggleOdinDrone()">🎻 Heimleið Tagelharpa + Odin Drone</button>
+                    </div>
+                </div>
+                <div class="runes-strip" id="runesStrip"></div>
+            </div>
+            
             <footer>
-                <span>8b-is-music v0.2.0 · CoreMIDI Native Client Active</span>
+                <span>8b-is-music v0.2.0 · OS-Agnostic 64B Core ABI · 360° Devices · Layer #69,636 (108/108 Laps)</span>
                 <span>Zeno Asymptotic Brickwall Limiter: <b style="color:var(--accent-cyan);">0.999985</b></span>
             </footer>
 
             <script>
+                const ELDER_FUTHARK = ['ᚠ','ᚢ','ᚦ','ᚨ','ᚱ','ᚲ','ᚷ','ᚹ','ᚺ','ᚾ','ᛁ','ᛃ','ᛇ','ᛈ','ᛉ','ᛋ','ᛏ','ᛒ','ᛖ','ᛗ','ᛚ','ᛝ','ᛞ','ᛟ'];
+                const DORIAN_RATIOS = [1.0, 9/8, 6/5, 4/3, 3/2, 5/3, 9/5, 2.0];
+                let audioCtx = null;
+                let odinDroneNodes = null;
+                let runeStep = 0;
+
+                const runesStrip = document.getElementById('runesStrip');
+                ELDER_FUTHARK.forEach((r, idx) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'rune-cell';
+                    cell.id = 'rune-' + idx;
+                    cell.innerText = r;
+                    cell.title = 'Rune #' + (idx + 1) + ' (' + r + ')';
+                    cell.onclick = () => triggerRune(idx);
+                    runesStrip.appendChild(cell);
+                });
+
+                function ensureAudio() {
+                    if (!audioCtx) {
+                        const AC = window.AudioContext || window.webkitAudioContext;
+                        if (AC) audioCtx = new AC();
+                    }
+                    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                    return audioCtx;
+                }
+
+                function triggerRune(idx) {
+                    const cell = document.getElementById('rune-' + idx);
+                    if (cell) {
+                        cell.classList.add('lit');
+                        setTimeout(() => cell.classList.remove('lit'), 260);
+                    }
+                    const ctx = ensureAudio();
+                    if (!ctx) return;
+                    const now = ctx.currentTime;
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    const ratio = DORIAN_RATIOS[idx % DORIAN_RATIOS.length] * (1 + Math.floor(idx / 8) * 0.5);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(144.0 * ratio, now);
+                    gain.gain.setValueAtTime(0.0001, now);
+                    gain.gain.exponentialRampToValueAtTime(0.06, now + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.48);
+                }
+
+                window.toggleOdinDrone = function() {
+                    const btn = document.getElementById('odinDroneBtn');
+                    if (odinDroneNodes) {
+                        odinDroneNodes.oscillators.forEach(o => { try { o.stop(); o.disconnect(); } catch (_) {} });
+                        clearInterval(odinDroneNodes.timer);
+                        odinDroneNodes = null;
+                        btn.classList.remove('active');
+                        btn.innerText = '🎻 Play Heimleið Tagelharpa + Odin Drone (72/108/432/528Hz)';
+                        return;
+                    }
+                    const ctx = ensureAudio();
+                    if (!ctx) return;
+                    const now = ctx.currentTime;
+                    const filter = ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(420, now);
+                    filter.connect(ctx.destination);
+                    const specs = [
+                        { f: 72.0, t: 'sawtooth', g: 0.04 },
+                        { f: 108.0, t: 'sawtooth', g: 0.035 },
+                        { f: 216.0, t: 'triangle', g: 0.04 },
+                        { f: 432.0, t: 'sine', g: 0.03 },
+                        { f: 528.0, t: 'sine', g: 0.025 },
+                        { f: 852.0, t: 'sine', g: 0.012 }
+                    ];
+                    const oscillators = specs.map(s => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = s.t;
+                        o.frequency.setValueAtTime(s.f, now);
+                        g.gain.setValueAtTime(s.g, now);
+                        o.connect(g);
+                        g.connect(filter);
+                        o.start(now);
+                        return o;
+                    });
+                    const timer = setInterval(() => {
+                        triggerRune(runeStep % 24);
+                        runeStep++;
+                    }, 1000);
+                    odinDroneNodes = { oscillators, timer };
+                    btn.classList.add('active');
+                    btn.innerText = '༒ Heimleið Tagelharpa + Odin n+1||[X] (#69,633) ACTIVE';
+                };
+
+                let desertPsyNodes = null;
+                let desertRiffStep = 0;
+                const KYUSS_RIFF_HZ = [72.0, 72.0, 86.4, 96.0, 108.0, 96.0, 115.2, 65.41];
+
+                window.toggleDesertPsy = function() {
+                    const btn = document.getElementById('desertPsyBtn');
+                    if (desertPsyNodes) {
+                        clearInterval(desertPsyNodes.timer);
+                        desertPsyNodes = null;
+                        btn.classList.remove('active');
+                        btn.innerText = '🎸 Desert Psy Rock (Kyuss × Plasma)';
+                        return;
+                    }
+                    const ctx = ensureAudio();
+                    if (!ctx) return;
+                    const timer = setInterval(() => {
+                        const now = ctx.currentTime;
+                        const hz = KYUSS_RIFF_HZ[desertRiffStep % KYUSS_RIFF_HZ.length];
+                        const osc = ctx.createOscillator();
+                        const sub = ctx.createOscillator();
+                        const filter = ctx.createBiquadFilter();
+                        const gain = ctx.createGain();
+                        osc.type = 'sawtooth';
+                        sub.type = 'triangle';
+                        osc.frequency.setValueAtTime(hz, now);
+                        sub.frequency.setValueAtTime(hz * 1.5, now);
+                        filter.type = 'bandpass';
+                        filter.frequency.setValueAtTime(360 + 220 * Math.sin(desertRiffStep * 0.45), now);
+                        filter.Q.setValueAtTime(2.4, now);
+                        gain.gain.setValueAtTime(0.0001, now);
+                        gain.gain.exponentialRampToValueAtTime(0.09, now + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.31);
+                        osc.connect(filter);
+                        sub.connect(filter);
+                        filter.connect(gain);
+                        if (typeof ctx.createStereoPanner === 'function') {
+                            const pan = ctx.createStereoPanner();
+                            const w = desertRiffStep * 0.35;
+                            pan.pan.setValueAtTime(0.75 * Math.cos(w) / (1 + Math.sin(w) * Math.sin(w)), now);
+                            gain.connect(pan);
+                            pan.connect(ctx.destination);
+                        } else {
+                            gain.connect(ctx.destination);
+                        }
+                        osc.start(now);
+                        sub.start(now);
+                        osc.stop(now + 0.33);
+                        sub.stop(now + 0.33);
+                        triggerRune((desertRiffStep * 3) % 24);
+                        desertRiffStep++;
+                    }, 326); // 92 BPM 8th-note Sky Valley / Plasma delay pocket
+                    desertPsyNodes = { timer };
+                    btn.classList.add('active');
+                    btn.innerText = '🏜️ Kyuss × Plasma Procedural Spatial ACTIVE';
+                };
+
+                window.runBackyard108 = function() {
+                    const btn = document.getElementById('backyard108Btn');
+                    btn.classList.add('active');
+                    let lap = 0;
+                    const t = setInterval(() => {
+                        lap += 4;
+                        triggerRune((lap / 4) % 24);
+                        if (lap >= 108) {
+                            clearInterval(t);
+                            btn.innerText = '🏆 108/108 Laps Verified (#69,636)';
+                        } else {
+                            btn.innerText = '🏃 Lap ' + lap + '/108 (gcd=1)';
+                        }
+                    }, 45);
+                };
+
                 // Generate waveform bars
                 for (let d = 0; d < 4; d++) {
                     const box = document.getElementById('wave-' + d);
@@ -315,6 +503,7 @@ final class NektarDJApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler
                         const p = document.getElementById('pad-' + idx);
                         p.classList.add('pressed');
                         setTimeout(() => p.classList.remove('pressed'), 140);
+                        triggerRune((idx * 3) % 24);
                     }
                 };
                 
